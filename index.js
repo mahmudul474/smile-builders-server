@@ -14,10 +14,11 @@ app.use(express.json())
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.dmnves2.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-async function run(){
-  try{
+async function run() {
+  try {
     const serviceCollection = client.db('smileBuilders').collection('services');
-    
+    const reviewCollection = client.db('smileBuilders').collection('reviews');
+
     // Get home page services with limit data (3)
     app.get('/services', async (req, res) => {
       const query = {};
@@ -36,20 +37,51 @@ async function run(){
 
     // Get Specific Service Data
     app.get('/services/:id', async (req, res) => {
-      const id = req.params.id; 
-      const query = {_id : ObjectId(id)};
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
       const service = await serviceCollection.findOne(query);
       res.send(service)
     })
 
-  // Get Service Data
+    // Craete Service Data
     app.post('/services', async (req, res) => {
       const service = req.body;
       const result = await serviceCollection.insertOne(service);
       res.send(result);
     });
+
+    // Create Review Data
+    app.post('/reviews', async (req, res) => {
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    });
+
+    app.get('/reviews', async (req, res) => {
+      // const decoded = req.decoded;
+      // if(decoded.email !== req.query.email){
+      //     res.status(403).send({message: 'unauthorized access'})
+      // }
+
+      let query = {};
+      if (req.query.email) {
+        query = {
+          email: req.query.email
+        }
+      }
+      const cursor = reviewCollection.find(query);
+      const orders = await cursor.toArray();
+      res.send(orders);
+    });
+
+    app.delete('/reviews/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await reviewCollection.deleteOne(query);
+      res.send(result);
+    })
   }
-  finally{
+  finally {
 
   }
 }
@@ -57,10 +89,10 @@ async function run(){
 run().catch(err => console.error(err))
 
 
-app.get('/',(req,res)=>{
+app.get('/', (req, res) => {
   res.send('Server Running')
 })
 
-app.listen(port, ()=>{
+app.listen(port, () => {
   console.log('Server Running on port', port);
 })
