@@ -26,8 +26,23 @@ async function run(){
       res.send(services)
     })
 
-    
+    // Get services page all services
+    app.get('/all-services', async (req, res) => {
+      const query = {};
+      const cursor = serviceCollection.find(query);
+      const services = await cursor.toArray();
+      res.send(services)
+    })
 
+    // Get Specific Service Data
+    app.get('/services/:id', async (req, res) => {
+      const id = req.params.id; 
+      const query = {_id : ObjectId(id)};
+      const service = await serviceCollection.findOne(query);
+      res.send(service)
+    })
+
+  // Get Service Data
     app.post('/services', async (req, res) => {
       const service = req.body;
       const result = await serviceCollection.insertOne(service);
