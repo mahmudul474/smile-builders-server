@@ -70,15 +70,52 @@ async function run() {
         }
       }
       const cursor = reviewCollection.find(query);
-      const orders = await cursor.toArray();
-      res.send(orders);
+      const reviews = await cursor.toArray();
+      res.send(reviews);
     });
+
+    app.get('/reviews', async (req, res) => {
+      // const decoded = req.decoded;
+      // if(decoded.email !== req.query.email){
+      //     res.status(403).send({message: 'unauthorized access'})
+      // }
+
+      let query = {};
+      if (req.query.service_id) {
+        query = {
+          service_id: req.query.service_id
+        }
+      }
+      const cursor = reviewCollection.find(query);
+      const reviews = await cursor.toArray();
+      res.send(reviews);
+    });
+
+    app.get('/reviews/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) }
+      const review = await reviewCollection.findOne(query)
+      res.send(review)
+    })
 
     app.delete('/reviews/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await reviewCollection.deleteOne(query);
       res.send(result);
+    })
+
+    app.patch('/reviews/:id', async (req, res) => {
+      const id = req.params.id;
+      const review = req.body;
+      const query = { _id: ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          message: review.message
+        }
+      }
+      const result = await reviewCollection.updateOne(query, updatedDoc)
+      res.send(result)
     })
   }
   finally {
