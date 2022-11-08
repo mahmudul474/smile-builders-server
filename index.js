@@ -14,15 +14,27 @@ app.use(express.json())
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.dmnves2.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+
 async function run() {
   try {
     const serviceCollection = client.db('smileBuilders').collection('services');
     const reviewCollection = client.db('smileBuilders').collection('reviews');
-
+    
+    app.get('/reviews', async (req, res) => {
+      let query = {};
+      if (req.query.email) {
+        query = {
+          email: req.query.email
+        }
+      }
+      const cursor = reviewCollection.find(query);
+      const reviews = await cursor.toArray();
+      res.send(reviews);
+    });
     // Get home page services with limit data (3)
     app.get('/services', async (req, res) => {
       const query = {};
-      const cursor = serviceCollection.find(query);
+      const cursor = serviceCollection.find(query).sort('time', -1);
       const services = await cursor.limit(3).toArray();
       res.send(services)
     })
@@ -30,7 +42,7 @@ async function run() {
     // Get services page all services
     app.get('/all-services', async (req, res) => {
       const query = {};
-      const cursor = serviceCollection.find(query);
+      const cursor = serviceCollection.find(query).sort('time', -1);
       const services = await cursor.toArray();
       res.send(services)
     })
@@ -58,11 +70,6 @@ async function run() {
     });
 
     app.get('/reviews', async (req, res) => {
-      // const decoded = req.decoded;
-      // if(decoded.email !== req.query.email){
-      //     res.status(403).send({message: 'unauthorized access'})
-      // }
-
       let query = {};
       if (req.query.email) {
         query = {
@@ -73,23 +80,23 @@ async function run() {
       const reviews = await cursor.toArray();
       res.send(reviews);
     });
-
-    app.get('/reviews', async (req, res) => {
-      // const decoded = req.decoded;
-      // if(decoded.email !== req.query.email){
-      //     res.status(403).send({message: 'unauthorized access'})
-      // }
-
-      let query = {};
-      if (req.query.service_id) {
+    app.get('/reviewsid', async (req, res) => {
+      let query = {}
+      console.log(req.query);
+      if (req.query.serviceId) {
         query = {
-          service_id: req.query.service_id
+          serviceId: req.query.serviceId
         }
+        const cursor = reviewCollection.find(query).sort('time', -1)
+        const matchedReviews = await cursor.toArray()
+        res.send(matchedReviews)
       }
-      const cursor = reviewCollection.find(query);
-      const reviews = await cursor.toArray();
-      res.send(reviews);
-    });
+    })
+
+    // const cursor = reviewCollection.find(query).sort('date', -1)
+
+    // Review Display with service id
+
 
     app.get('/reviews/:id', async (req, res) => {
       const id = req.params.id;
