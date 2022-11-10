@@ -37,23 +37,38 @@ async function run() {
     const serviceCollection = client.db('smileBuilders').collection('services');
     const reviewCollection = client.db('smileBuilders').collection('reviews');
 
+    // Create jwt token
     app.post('/jwt', (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
       res.send({ token })
     })
 
-    app.get('/reviews', async (req, res) => {
+    // Get reviews with email
+    app.get('/reviews', verifyJWT, async (req, res) => {
+      const decoded = req.decoded;
+      if (decoded.email !== req.query.email) {
+        res.status(403).send({ message: 'unauthorized access' })
+      }
       let query = {};
       if (req.query.email) {
         query = {
           email: req.query.email
         }
       }
+      const cursor = reviewCollection.find(query).sort('time', -1);
+      const reviews = await cursor.toArray();
+      res.send(reviews);
+    });
+
+    // Get all reviews
+    app.get('/all-reviews', async (req, res) => {
+      let query = {};
       const cursor = reviewCollection.find(query);
       const reviews = await cursor.toArray();
       res.send(reviews);
     });
+
     // Get home page services with limit data (3)
     app.get('/services', async (req, res) => {
       const query = {};
@@ -92,21 +107,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/reviews',verifyJWT, async (req, res) => {
-      const decoded = req.decoded;
-      if(decoded.email !== req.query.email){
-          res.status(403).send({message: 'unauthorized access'})
-      }
-      let query = {};
-      if (req.query.email) {
-        query = {
-          email: req.query.email
-        }
-      }
-      const cursor = reviewCollection.find(query);
-      const reviews = await cursor.toArray();
-      res.send(reviews);
-    });
+    // Get reviews with service id
     app.get('/reviewsid', async (req, res) => {
       let query = {}
       if (req.query.serviceId) {
@@ -119,25 +120,21 @@ async function run() {
       }
     })
 
-    // const cursor = reviewCollection.find(query).sort('date', -1)
-
-    // Review Display with service id
-
-
+    // Get reviews wit id
     app.get('/reviews/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) }
       const review = await reviewCollection.findOne(query)
       res.send(review)
     })
-
+    // Delete Review with id
     app.delete('/reviews/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await reviewCollection.deleteOne(query);
       res.send(result);
     })
-
+    // Update Review With Id
     app.patch('/reviews/:id', async (req, res) => {
       const id = req.params.id;
       const review = req.body;
